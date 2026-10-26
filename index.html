@@ -1,0 +1,787 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Склади рівняння</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marck+Script&family=Nunito:wght@500;700;800&display=swap">
+<style>
+  /* Layout: одна задача на екран, як сторінка зошита у клітинку; зверху смужка прогресу, під нею картка із задачею та варіантами */
+  :root {
+    --paper: #F4F8FC;
+    --grid: #DCE6F2;
+    --card: #FFFFFF;
+    --ink: #1B2A4A;
+    --ink-soft: #56658A;
+    --line: #C9D6E8;
+    --accent: #2A58D6;
+    --accent-ink: #FFFFFF;
+    --accent-soft: #E6EDFD;
+    --good: #17804A;
+    --good-bg: #DDF3E6;
+    --bad: #C0352B;
+    --bad-bg: #FCE3E0;
+    --shadow: 0 1px 0 rgba(27, 42, 74, 0.06), 0 10px 26px -14px rgba(27, 42, 74, 0.28);
+    --display: "Marck Script", "Segoe Script", "Comic Sans MS", cursive;
+    --body: "Nunito", "Trebuchet MS", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0F1626;
+      --grid: #1B2740;
+      --card: #172038;
+      --ink: #E8EEFB;
+      --ink-soft: #9FB0D3;
+      --line: #2B3B5F;
+      --accent: #8FB0FF;
+      --accent-ink: #0F1626;
+      --accent-soft: #1F2D4F;
+      --good: #63D391;
+      --good-bg: #143726;
+      --bad: #FF8A80;
+      --bad-bg: #43211F;
+      --shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.7);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0F1626;
+    --grid: #1B2740;
+    --card: #172038;
+    --ink: #E8EEFB;
+    --ink-soft: #9FB0D3;
+    --line: #2B3B5F;
+    --accent: #8FB0FF;
+    --accent-ink: #0F1626;
+    --accent-soft: #1F2D4F;
+    --good: #63D391;
+    --good-bg: #143726;
+    --bad: #FF8A80;
+    --bad-bg: #43211F;
+    --shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.7);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: -1px -1px;
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.5;
+    padding-block: 22px 56px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .head { display: flex; flex-direction: column; gap: 6px; }
+  .kicker {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  h1 {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(2.3rem, 9vw, 3.1rem);
+    line-height: 1.05;
+    color: var(--accent);
+    text-wrap: balance;
+  }
+  .lead { margin: 0; color: var(--ink-soft); font-weight: 500; max-width: 46ch; }
+
+  #quiz { display: flex; flex-direction: column; gap: 12px; }
+  .progress { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; }
+  .seg { height: 8px; border-radius: 4px; background: var(--line); }
+  .seg.cur { background: var(--accent); }
+  .seg.ok { background: var(--good); }
+  .seg.no { background: var(--bad); }
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+  }
+  .story { margin: 0; font-size: 1.15rem; font-weight: 700; line-height: 1.5; }
+  .ask { margin: 0; font-size: 1.15rem; font-weight: 800; line-height: 1.4; }
+  .let {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    font-weight: 600;
+  }
+  .var { font-weight: 800; color: var(--accent); font-size: 1.1em; }
+  .prompt {
+    margin: 6px 0 0;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .options { display: grid; gap: 10px; }
+  .opt {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 58px;
+    padding: 10px 14px;
+    text-align: left;
+    background: var(--card);
+    color: var(--ink);
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    font-family: var(--body);
+    font-size: 1.3rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .opt .tag {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--accent-soft);
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+    font-weight: 800;
+  }
+  .opt .eq { min-width: 0; overflow-wrap: anywhere; }
+  .opt .mark { margin-left: auto; font-size: 1.3rem; }
+  .opt:hover:not(:disabled) { border-color: var(--accent); }
+  .opt:disabled { cursor: default; color: var(--ink); }
+  .opt.correct { border-color: var(--good); background: var(--good-bg); }
+  .opt.correct .mark { color: var(--good); }
+  .opt.correct .tag { background: var(--good); color: var(--card); }
+  .opt.wrong { border-color: var(--bad); background: var(--bad-bg); }
+  .opt.wrong .mark { color: var(--bad); }
+  .opt.wrong .tag { background: var(--bad); color: var(--card); }
+  .opt.dim { opacity: 0.6; }
+
+  .fb {
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .fb.ok { background: var(--good-bg); border-color: var(--good); }
+  .fb.no { background: var(--bad-bg); border-color: var(--bad); }
+  .fb .t { font-weight: 800; font-size: 1.05rem; }
+  .fb.ok .t { color: var(--good); }
+  .fb.no .t { color: var(--bad); }
+  .fb b { font-weight: 800; }
+
+  .btn {
+    width: 100%;
+    min-height: 52px;
+    padding: 12px 18px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-family: var(--body);
+    font-size: 1.05rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  /* Результат */
+  .big { margin: 0; font-family: var(--display); font-size: clamp(3.4rem, 16vw, 5rem); line-height: 1; color: var(--ink); }
+  .big .n { color: var(--accent); }
+  .stars { margin: 0; font-size: 1.6rem; letter-spacing: 0.15em; color: var(--accent); }
+  .level { margin: 0; font-size: 1.2rem; font-weight: 800; }
+  .msg { margin: 0; color: var(--ink-soft); font-weight: 600; }
+  .meter { height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; }
+  .meter > i { display: block; height: 100%; background: var(--accent); }
+  .review { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .review li {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 10px;
+    align-items: start;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .review .m { font-weight: 800; font-size: 1.1rem; line-height: 1.4; }
+  .review li.ok .m { color: var(--good); }
+  .review li.no .m { color: var(--bad); }
+  .review .eq { font-weight: 800; font-size: 1.1rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .review .sub { color: var(--ink-soft); font-size: 0.9rem; font-weight: 600; }
+
+  @media (max-width: 420px) {
+    .card { padding: 16px; }
+    .opt { font-size: 1.2rem; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .card { animation: rise 0.25s ease-out; }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  }
+</style>
+
+<main class="wrap">
+  <header class="head">
+    <p class="kicker">Математика · 4 клас</p>
+    <h1>Склади рівняння</h1>
+    <p class="lead">Прочитай задачу й вибери рівняння, яке підходить до умови. Числа щоразу нові.</p>
+  </header>
+
+  <section id="quiz">
+    <div class="progress" id="progress" aria-hidden="true"></div>
+    <div class="meta"><span id="counter"></span><span id="score"></span></div>
+    <article class="card" id="card">
+      <p class="story" id="story"></p>
+      <p class="let" id="let"></p>
+      <p class="ask" id="ask"></p>
+      <h2 class="prompt">Яке рівняння відповідає умові?</h2>
+      <div class="options" id="options" role="group" aria-label="Варіанти відповіді"></div>
+      <div class="fb" id="fb" role="status" aria-live="polite" hidden></div>
+      <button class="btn" id="next" type="button" hidden>Далі</button>
+    </article>
+  </section>
+
+  <section id="result" hidden></section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Допоміжні функції ---------- */
+  const rnd = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+  const pick = (arr) => arr[rnd(0, arr.length - 1)];
+  const shuffle = (arr) => {
+    const r = arr.slice();
+    for (let i = r.length - 1; i > 0; i--) {
+      const j = rnd(0, i);
+      const t = r[i]; r[i] = r[j]; r[j] = t;
+    }
+    return r;
+  };
+  // Українська форма іменника після числа: [1, 2–4, 5+]
+  const pl = (n, f) => {
+    const a = n % 10, b = n % 100;
+    if (a === 1 && b !== 11) return f[0];
+    if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return f[1];
+    return f[2];
+  };
+  // Числа, після яких знахідний відмінок однини відрізняється від називного (21 цукерку)
+  const bad1 = (n) => n % 10 === 1 && n % 100 !== 11;
+  const rndA = (a, b) => { let n; do { n = rnd(a, b); } while (bad1(n)); return n; };
+
+  const LETTERS = ['x', 'y', 'z', 'a', 'b', 'c', 'm', 'n', 'k'];
+  const UAH = ['гривня', 'гривні', 'гривень'];
+  const YEAR = ['рік', 'роки', 'років'];
+  const RAZ = ['раз', 'рази', 'разів'];
+  const PAGE = ['сторінка', 'сторінки', 'сторінок'];
+  const STUD = ['учень', 'учні', 'учнів'];
+  const APPLE = ['яблуко', 'яблука', 'яблук'];
+  const SEAT = ['місце', 'місця', 'місць'];
+  const CANDY = ['цукерка', 'цукерки', 'цукерок'];
+  const NOTE = ['зошит', 'зошити', 'зошитів'];
+  const PLATE = ['тарілка', 'тарілки', 'тарілок'];
+  const PIE = ['пиріжок', 'пиріжки', 'пиріжків'];
+
+  /* ---------- Рівняння: рядок і розв’язок ---------- */
+  const E = {
+    add:  (L, a, b) => ({ s: `${L} + ${a} = ${b}`, v: b - a }),
+    addR: (L, a, b) => ({ s: `${a} + ${L} = ${b}`, v: b - a }),
+    sub1: (L, a, b) => ({ s: `${L} − ${a} = ${b}`, v: a + b }),
+    sub2: (L, a, b) => ({ s: `${a} − ${L} = ${b}`, v: a - b }),
+    mul:  (L, a, b) => ({ s: `${L} · ${a} = ${b}`, v: b / a }),
+    mulR: (L, a, b) => ({ s: `${a} · ${L} = ${b}`, v: b / a }),
+    div1: (L, a, b) => ({ s: `${L} : ${a} = ${b}`, v: a * b }),
+    div2: (L, a, b) => ({ s: `${a} : ${L} = ${b}`, v: a / b })
+  };
+  const ADDSUB = ['add', 'addR', 'sub1', 'sub2'];
+  const MULDIV = ['mul', 'mulR', 'div1', 'div2'];
+  const isGood = (e) => Number.isInteger(e.v) && e.v > 0;
+
+  // Неправильні варіанти: ті самі числа, інші дії. Розв’язок кожного відрізняється від правильного.
+  function makeDistractors(L, nums, ans, family, taken) {
+    const p = nums[0], q = nums[1];
+    const main = family === 'addsub' ? ADDSUB : MULDIV;
+    const other = family === 'addsub' ? MULDIV : ADDSUB;
+    const cands = (ks) => shuffle(ks.flatMap((k) => [E[k](L, p, q), E[k](L, q, p)]));
+    const mc = cands(main), oc = cands(other);
+    const pool = [].concat(mc.filter(isGood), oc.filter(isGood), mc.filter((e) => !isGood(e)), oc.filter((e) => !isGood(e)));
+    const out = [];
+    const sols = [ans];
+    const strs = new Set(taken);
+    const tryAdd = (e) => {
+      if (out.length >= 3) return;
+      if (sols.some((v) => Math.abs(v - e.v) < 1e-9)) return;
+      if (strs.has(e.s)) return;
+      out.push(e); sols.push(e.v); strs.add(e.s);
+    };
+    pool.forEach(tryAdd);
+    let guard = 0;
+    while (out.length < 3 && guard++ < 100) tryAdd(E.add(L, rnd(2, 60), rnd(20, 120)));
+    return out;
+  }
+
+  /* ---------- 12 типів задач ---------- */
+  const T = [
+    // 1. Було кілька, додали, стало: x + a = t
+    () => {
+      const o = pick([
+        { loc: 'У кошику', f: APPLE },
+        { loc: 'У вазі', f: CANDY },
+        { loc: 'На полиці', f: ['книжка', 'книжки', 'книжок'] },
+        { loc: 'У коробці', f: ['олівець', 'олівці', 'олівців'] }
+      ]);
+      const a = rndA(8, 35), s = rnd(10, 45), t = s + a;
+      return {
+        story: `${o.loc} було кілька ${o.f[2]}. Коли додали ще ${a} ${pl(a, o.f)}, їх стало ${t}.`,
+        ask: `Скільки ${o.f[2]} було спочатку?`,
+        unk: `кількість ${o.f[2]}, які були спочатку`,
+        ans: s, nums: [a, t], family: 'addsub',
+        forms: (L) => [E.add(L, a, t), E.addR(L, a, t)]
+      };
+    },
+    // 2. Гроші: m − x = r
+    () => {
+      const n = pick([
+        { gen: 'Марійки', pron: 'Вона', verb: 'купила', has: 'в неї' },
+        { gen: 'Тараса', pron: 'Він', verb: 'купив', has: 'в нього' },
+        { gen: 'Соломійки', pron: 'Вона', verb: 'купила', has: 'в неї' },
+        { gen: 'Богдана', pron: 'Він', verb: 'купив', has: 'в нього' }
+      ]);
+      const it = pick([
+        { acc: 'зошит', nom: 'зошит' },
+        { acc: 'лінійку', nom: 'лінійка' },
+        { acc: 'гумку', nom: 'гумка' },
+        { acc: 'пенал', nom: 'пенал' },
+        { acc: 'морозиво', nom: 'морозиво' }
+      ]);
+      const price = rnd(6, 40), r = rnd(5, 40), m = price + r;
+      return {
+        story: `У ${n.gen} було ${m} ${pl(m, UAH)}. ${n.pron} ${n.verb} ${it.acc}, і ${n.has} залишилося ${r} ${pl(r, UAH)}.`,
+        ask: `Скільки коштує ${it.nom}?`,
+        unk: 'вартість покупки в гривнях',
+        ans: price, nums: [m, r], family: 'addsub',
+        forms: (L) => [E.sub2(L, m, r), E.add(L, r, m), E.addR(L, r, m)]
+      };
+    },
+    // 3. Прочитав / пройшли, залишилось: x + r = n
+    () => {
+      if (Math.random() < 0.6) {
+        const nm = pick([
+          { name: 'Петрик', verb: 'прочитав' }, { name: 'Оленка', verb: 'прочитала' },
+          { name: 'Данило', verb: 'прочитав' }, { name: 'Соломія', verb: 'прочитала' }
+        ]);
+        const n = rnd(60, 150), r = rnd(15, n - 20);
+        return {
+          story: `У книжці ${n} ${pl(n, PAGE)}. ${nm.name} ${nm.verb} кілька сторінок, і залишилося ще ${r} ${pl(r, PAGE)}.`,
+          ask: `Скільки сторінок ${nm.verb} ${nm.name}?`,
+          unk: `кількість сторінок, які ${nm.verb} ${nm.name}`,
+          ans: n - r, nums: [r, n], family: 'addsub',
+          forms: (L) => [E.add(L, r, n), E.addR(L, r, n)]
+        };
+      }
+      const n = rnd(20, 60), r = rnd(5, n - 8);
+      return {
+        story: `Туристи мали пройти ${n} км. Вони пройшли кілька кілометрів, і їм залишилося ${r} км.`,
+        ask: 'Скільки кілометрів вони пройшли?',
+        unk: 'кількість кілометрів, які пройшли туристи',
+        ans: n - r, nums: [r, n], family: 'addsub',
+        forms: (L) => [E.add(L, r, n), E.addR(L, r, n)]
+      };
+    },
+    // 4. Однакові групи: x · a = t
+    () => {
+      const v = rnd(1, 3);
+      let a, x, t, story, ask, unk;
+      if (v === 1) {
+        a = 2; x = rnd(10, 16); t = a * x;
+        story = `У класі за кожною партою сидять по ${a} ${pl(a, STUD)}. Усього в класі ${t} ${pl(t, STUD)}.`;
+        ask = 'Скільки парт у класі?'; unk = 'кількість парт у класі';
+      } else if (v === 2) {
+        a = rnd(3, 9); x = rnd(4, 12); t = a * x;
+        story = `Мама розклала яблука в пакети, по ${a} ${pl(a, APPLE)} у кожний. Усього було ${t} ${pl(t, APPLE)}.`;
+        ask = 'Скільки пакетів знадобилося?'; unk = 'кількість пакетів';
+      } else {
+        a = rnd(15, 45); x = rnd(3, 9); t = a * x;
+        story = `У кожному автобусі ${a} ${pl(a, SEAT)}. Усього в автобусах ${t} ${pl(t, SEAT)}.`;
+        ask = 'Скільки автобусів?'; unk = 'кількість автобусів';
+      }
+      return { story, ask, unk, ans: x, nums: [a, t], family: 'muldiv',
+        forms: (L) => [E.mul(L, a, t), E.mulR(L, a, t)] };
+    },
+    // 5. Розклали порівну (ділення): t : x = a
+    () => {
+      const a = rnd(3, 9), x = rnd(4, 12), t = a * x;
+      if (Math.random() < 0.5) {
+        return {
+          story: `Було ${t} ${pl(t, CANDY)}. Їх розклали порівну в пакети, по ${a} ${pl(a, CANDY)} у кожний.`,
+          ask: 'Скільки пакетів вийшло?', unk: 'кількість пакетів',
+          ans: x, nums: [a, t], family: 'muldiv',
+          forms: (L) => [E.div2(L, t, a)]
+        };
+      }
+      return {
+        story: `Вчитель роздав ${t} ${pl(t, NOTE)} порівну між групами, по ${a} ${pl(a, NOTE)} кожній групі.`,
+        ask: 'Скільки було груп?', unk: 'кількість груп',
+        ans: x, nums: [a, t], family: 'muldiv',
+        forms: (L) => [E.div2(L, t, a)]
+      };
+    },
+    // 6. Задумане число (+ або −)
+    () => {
+      const a = rnd(8, 40), v = rnd(1, 3);
+      if (v === 3) {
+        const x = rnd(10, 60), t = x + a;
+        return {
+          story: `Задумали число, збільшили його на ${a} і отримали ${t}.`,
+          ask: 'Яке число задумали?', unk: 'задумане число',
+          ans: x, nums: [a, t], family: 'addsub',
+          forms: (L) => [E.add(L, a, t), E.addR(L, a, t)]
+        };
+      }
+      const r = rnd(10, 70);
+      return {
+        story: v === 1
+          ? `Задумали число, зменшили його на ${a} і отримали ${r}.`
+          : `Від задуманого числа відняли ${a} і отримали ${r}.`,
+        ask: 'Яке число задумали?', unk: 'задумане число',
+        ans: a + r, nums: [a, r], family: 'addsub',
+        forms: (L) => [E.sub1(L, a, r)]
+      };
+    },
+    // 7. Задумане число (ділення або множення)
+    () => {
+      const a = rnd(2, 9), r = rnd(3, 12), v = rnd(1, 3);
+      if (v === 3) {
+        const t = a * r;
+        return {
+          story: `Задумали число, збільшили його в ${a} ${pl(a, RAZ)} і отримали ${t}.`,
+          ask: 'Яке число задумали?', unk: 'задумане число',
+          ans: r, nums: [a, t], family: 'muldiv',
+          forms: (L) => [E.mul(L, a, t), E.mulR(L, a, t)]
+        };
+      }
+      return {
+        story: v === 1
+          ? `Задумали число, зменшили його в ${a} ${pl(a, RAZ)} і отримали ${r}.`
+          : `Задумане число розділили на ${a}, і вийшло ${r}.`,
+        ask: 'Яке число задумали?', unk: 'задумане число',
+        ans: a * r, nums: [a, r], family: 'muldiv',
+        forms: (L) => [E.div1(L, a, r)]
+      };
+    },
+    // 8. Порівну на кілька частин: k · x = t
+    () => {
+      const k = rnd(3, 9), x = rnd(4, 12), t = k * x;
+      if (Math.random() < 0.5) {
+        return {
+          story: `Бабуся розклала пиріжки порівну на ${k} ${pl(k, PLATE)}. Усього було ${t} ${pl(t, PIE)}.`,
+          ask: 'Скільки пиріжків на кожній тарілці?', unk: 'кількість пиріжків на одній тарілці',
+          ans: x, nums: [k, t], family: 'muldiv',
+          forms: (L) => [E.mulR(L, k, t), E.mul(L, k, t)]
+        };
+      }
+      const k2 = rnd(2, 9), x2 = rnd(5, 30), t2 = k2 * x2;
+      return {
+        story: `У тата було ${t2} ${pl(t2, UAH)}. Він поділив їх порівну між ${k2} дітьми.`,
+        ask: 'Скільки гривень отримала кожна дитина?', unk: 'кількість гривень, яку отримала кожна дитина',
+        ans: x2, nums: [k2, t2], family: 'muldiv',
+        forms: (L) => [E.mulR(L, k2, t2), E.mul(L, k2, t2)]
+      };
+    },
+    // 9. Вік: x + d = A
+    () => {
+      const p = pick([
+        { dat: 'Колі', pron: 'Він', elder: 'старший', sibAcc: 'сестру', sibDat: 'сестрі', sibGen: 'сестри' },
+        { dat: 'Максиму', pron: 'Він', elder: 'старший', sibAcc: 'сестру', sibDat: 'сестрі', sibGen: 'сестри' },
+        { dat: 'Олі', pron: 'Вона', elder: 'старша', sibAcc: 'брата', sibDat: 'братові', sibGen: 'брата' },
+        { dat: 'Марії', pron: 'Вона', elder: 'старша', sibAcc: 'брата', sibDat: 'братові', sibGen: 'брата' }
+      ]);
+      const A = rnd(9, 15), d = rnd(2, 6);
+      return {
+        story: `${p.dat} ${A} ${pl(A, YEAR)}. ${p.pron} ${p.elder} за ${p.sibAcc} на ${d} ${pl(d, YEAR)}.`,
+        ask: `Скільки років ${p.sibDat}?`,
+        unk: `вік ${p.sibGen} (у роках)`,
+        ans: A - d, nums: [d, A], family: 'addsub',
+        forms: (L) => [E.add(L, d, A), E.addR(L, d, A), E.sub2(L, A, d)]
+      };
+    },
+    // 10. Дві частини: a + x = t
+    () => {
+      const o = pick([
+        { w2: 'У двох коробках', first: 'У першій коробці', second: 'у другій коробці', f: ['олівець', 'олівці', 'олівців'] },
+        { w2: 'На двох полицях', first: 'На першій полиці', second: 'на другій полиці', f: ['книжка', 'книжки', 'книжок'] },
+        { w2: 'У двох класах', first: 'У першому класі', second: 'у другому класі', f: STUD, cls: true },
+        { w2: 'У двох кошиках', first: 'У першому кошику', second: 'у другому кошику', f: APPLE }
+      ]);
+      let t, a;
+      if (o.cls) { a = rnd(20, 30); t = a + rnd(18, 30); }
+      else { t = rnd(40, 100); a = rnd(15, t - 12); }
+      return {
+        story: `${o.w2} разом ${t} ${pl(t, o.f)}. ${o.first} ${a} ${pl(a, o.f)}.`,
+        ask: `Скільки ${o.f[2]} ${o.second}?`,
+        unk: `кількість ${o.f[2]} ${o.second}`,
+        ans: t - a, nums: [a, t], family: 'addsub',
+        forms: (L) => [E.addR(L, a, t), E.add(L, a, t), E.sub2(L, t, a)]
+      };
+    },
+    // 11. Ціна однієї речі: k · x = t
+    () => {
+      const o = pick([
+        { f: ['ручка', 'ручки', 'ручок'], gen: 'ручки' },
+        { f: ['булочка', 'булочки', 'булочок'], gen: 'булочки' },
+        { f: ['листівка', 'листівки', 'листівок'], gen: 'листівки' },
+        { f: ['наклейка', 'наклейки', 'наклейок'], gen: 'наклейки' }
+      ]);
+      const k = rnd(2, 9);
+      let price, t;
+      do { price = rnd(5, 30); t = price * k; } while (bad1(t));
+      const adj = k < 5 ? 'однакові' : 'однакових';
+      return {
+        story: `За ${k} ${adj} ${pl(k, o.f)} заплатили ${t} ${pl(t, UAH)}.`,
+        ask: `Скільки коштує одна ${o.f[0]}?`,
+        unk: `ціна однієї ${o.gen} (у гривнях)`,
+        ans: price, nums: [k, t], family: 'muldiv',
+        forms: (L) => [E.mulR(L, k, t), E.mul(L, k, t)]
+      };
+    },
+    // 12. Площа прямокутника: a · x = S
+    () => {
+      const o = pick([
+        { obj: 'прямокутника', poss: 'Його', unit: 'см', ask: 'Яка ширина прямокутника?' },
+        { obj: 'ділянки', poss: 'Її', unit: 'м', ask: 'Яка ширина ділянки?', gen: 'прямокутної ділянки' }
+      ]);
+      const x = rnd(3, 9), a = x + rnd(1, 6), S = a * x;
+      const who = o.gen || 'прямокутника';
+      return {
+        story: `Площа ${who} дорівнює ${S} ${o.unit}². ${o.poss} довжина ${a} ${o.unit}.`,
+        ask: o.ask,
+        unk: `ширина ${o.obj} (у ${o.unit})`,
+        ans: x, nums: [a, S], family: 'muldiv',
+        forms: (L) => [E.mulR(L, a, S), E.mul(L, a, S)]
+      };
+    }
+  ];
+
+  function buildQuestion(fn) {
+    const t = fn();
+    const L = pick(LETTERS);
+    const forms = t.forms(L);
+    const correct = pick(forms);
+    const dist = makeDistractors(L, t.nums, t.ans, t.family, forms.map((f) => f.s));
+    const options = shuffle([{ s: correct.s, v: correct.v, ok: true }]
+      .concat(dist.map((e) => ({ s: e.s, v: e.v, ok: false }))));
+    return { story: t.story, ask: t.ask, unk: t.unk, L: L, ans: t.ans, correct: correct.s, options: options, picked: null };
+  }
+
+  if (typeof window !== 'undefined') window.__eqTest = { T: T, buildQuestion: buildQuestion };
+  if (typeof document === 'undefined' || !document.getElementById('quiz')) return;
+
+  /* ---------- Інтерфейс ---------- */
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  };
+  const TAGS = ['А', 'Б', 'В', 'Г'];
+  const state = { qs: [], i: 0 };
+  const score = () => state.qs.filter((q) => q.picked && q.picked.ok).length;
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function newQuiz() {
+    state.qs = shuffle(T).map(buildQuestion);
+    state.i = 0;
+    $('result').hidden = true;
+    $('quiz').hidden = false;
+    renderQuestion();
+  }
+
+  function renderProgress() {
+    const p = $('progress');
+    p.textContent = '';
+    state.qs.forEach((q, i) => {
+      let c = 'seg';
+      if (q.picked) c += q.picked.ok ? ' ok' : ' no';
+      else if (i === state.i) c += ' cur';
+      p.appendChild(el('span', c));
+    });
+  }
+
+  function renderQuestion() {
+    const q = state.qs[state.i];
+    renderProgress();
+    $('counter').textContent = `Задача ${state.i + 1} з ${state.qs.length}`;
+    $('score').textContent = `Правильно: ${score()}`;
+    $('story').textContent = q.story;
+    const let_ = $('let');
+    let_.textContent = '';
+    let_.append('Нехай ', el('span', 'var', q.L), ` — ${q.unk}.`);
+    $('ask').textContent = q.ask;
+
+    const box = $('options');
+    box.textContent = '';
+    q.options.forEach((o, idx) => {
+      const b = el('button', 'opt');
+      b.type = 'button';
+      b.append(el('span', 'tag', TAGS[idx]), el('span', 'eq', o.s), el('span', 'mark'));
+      b.addEventListener('click', () => choose(idx));
+      box.appendChild(b);
+    });
+    $('fb').hidden = true;
+    $('next').hidden = true;
+    const card = $('card');
+    card.style.animation = 'none';
+    void card.offsetWidth;
+    card.style.animation = '';
+  }
+
+  function choose(idx) {
+    const q = state.qs[state.i];
+    if (q.picked) return;
+    const o = q.options[idx];
+    q.picked = o;
+    const btns = $('options').children;
+    q.options.forEach((opt, k) => {
+      const b = btns[k];
+      b.disabled = true;
+      const mark = b.querySelector('.mark');
+      if (opt.ok) { b.classList.add('correct'); mark.textContent = '✓'; }
+      else if (k === idx) { b.classList.add('wrong'); mark.textContent = '✗'; }
+      else b.classList.add('dim');
+    });
+
+    const fb = $('fb');
+    fb.textContent = '';
+    fb.className = 'fb ' + (o.ok ? 'ok' : 'no');
+    fb.appendChild(el('span', 't', o.ok ? 'Правильно!' : 'Неправильно.'));
+    const line = (label, value) => {
+      const p = el('span');
+      p.append(label + ' ', el('b', null, value));
+      fb.appendChild(p);
+    };
+    line('Правильне рівняння:', q.correct);
+    line('Розв’язок:', `${q.L} = ${q.ans}`);
+    line('Перевірка:', q.correct.split(q.L).join(String(q.ans)));
+    fb.hidden = false;
+
+    const next = $('next');
+    next.textContent = state.i < state.qs.length - 1 ? 'Далі' : 'Показати результат';
+    next.hidden = false;
+    renderProgress();
+    $('score').textContent = `Правильно: ${score()}`;
+    next.focus({ preventScroll: true });
+    next.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+  }
+
+  function level(s) {
+    if (s >= 11) return { name: 'Високий рівень', stars: 3, msg: 'Чудово! Ти добре вмієш складати рівняння за умовою задачі.' };
+    if (s >= 8) return { name: 'Достатній рівень', stars: 2, msg: 'Добре! Ще трохи практики, і вийде майже без помилок.' };
+    if (s >= 5) return { name: 'Середній рівень', stars: 1, msg: 'Непогано. Познач невідоме буквою й подумай, що з ним робили в задачі.' };
+    return { name: 'Початковий рівень', stars: 0, msg: 'Спробуй ще раз. Спершу знайди, що в задачі невідоме, і познач його буквою.' };
+  }
+
+  function showResult() {
+    $('quiz').hidden = true;
+    const r = $('result');
+    r.textContent = '';
+    r.hidden = false;
+    const total = state.qs.length, s = score(), pct = Math.round((s / total) * 100);
+    const lv = level(s);
+
+    const card = el('article', 'card');
+    card.appendChild(el('p', 'kicker', 'Твій результат'));
+    const big = el('p', 'big');
+    big.append(el('span', 'n', String(s)), ` з ${total}`);
+    card.appendChild(big);
+    const st = el('p', 'stars', '★'.repeat(lv.stars) + '☆'.repeat(3 - lv.stars));
+    st.setAttribute('aria-label', `${lv.stars} з 3 зірок`);
+    card.appendChild(st);
+    card.appendChild(el('p', 'level', `${lv.name} · ${pct}%`));
+    const meter = el('div', 'meter');
+    const fill = el('i');
+    fill.style.width = pct + '%';
+    meter.appendChild(fill);
+    card.appendChild(meter);
+    card.appendChild(el('p', 'msg', lv.msg));
+
+    const list = el('ol', 'review');
+    list.style.listStyle = 'none';
+    state.qs.forEach((q, i) => {
+      const ok = q.picked && q.picked.ok;
+      const li = el('li', ok ? 'ok' : 'no');
+      li.appendChild(el('span', 'm', ok ? '✓' : '✗'));
+      const body = el('div');
+      body.appendChild(el('div', 'eq', q.correct));
+      body.appendChild(el('div', 'sub', `Задача ${i + 1}` + (ok ? '' : `. Твоя відповідь: ${q.picked.s}`)));
+      li.appendChild(body);
+      list.appendChild(li);
+    });
+    card.appendChild(list);
+
+    const again = el('button', 'btn', 'Пройти ще раз з новими числами');
+    again.type = 'button';
+    again.addEventListener('click', () => { newQuiz(); window.scrollTo(0, 0); });
+    card.appendChild(again);
+    r.appendChild(card);
+    window.scrollTo(0, 0);
+  }
+
+  $('next').addEventListener('click', () => {
+    if (state.i < state.qs.length - 1) { state.i++; renderQuestion(); window.scrollTo(0, 0); }
+    else showResult();
+  });
+  document.addEventListener('keydown', (e) => {
+    if ($('quiz').hidden || e.ctrlKey || e.metaKey || e.altKey) return;
+    const k = parseInt(e.key, 10);
+    const q = state.qs[state.i];
+    if (k >= 1 && k <= 4 && q && !q.picked) choose(k - 1);
+  });
+
+  newQuiz();
+})();
+</script>
+
+</body></html>
